@@ -3,23 +3,57 @@
 <html>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 	<head>
-		<style>
-			.w3-container{
-				width: 350px;
-			}
-		</style>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link rel="preconnect" href="https://fonts.gstatic.com">
+		<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="style.css" >
 	</head>
 	<body>
-		<div class="w3-container w3-light-blue">
-			<p>Better - a productivity timer</p>
+		<div class="container-liquid bg-info text-center">
+			<div class="pt-3 pb-1 text-center text-white">
+				<h4>Better - a productivity timer</h4>
+			</div>
+			<div class="card bg-warning m-2 py-3">
+
+				<div class="base-timer">
+				  <svg class="base-timer__svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+				    <g class="base-timer__circle">
+				      <circle class="base-timer__path-elapsed" cx="50" cy="50" r="45"></circle>
+				      <path
+				        id="base-timer-path-remaining"
+				        stroke-dasharray="283"
+				        class="base-timer__path-remaining"
+				        d="
+				          M 50, 50
+				          m -45, 0
+				          a 45,45 0 1,0 90,0
+				          a 45,45 0 1,0 -90,0
+				        "
+				      ></path>
+				    </g>
+				  </svg>
+
+				  <span id="base-timer-label" class="base-timer__label"></span>
+				</div>
+
+				<form>
+					<div class="container mt-2">
+					  <div class="row d-flex justify-content-center">
+					  	<button id="options" type="button" class="col-4 btn btn-outline-dark">settings</button>
+					  	<div class="col-1"></div>
+					  	<input class="col-3 btn btn-primary" id="start" type="submit" value="start">
+					  </div>
+				    </div>
+				</form>
+			</div> 
+			<div class="py-2 text-white">
+				<h6>Made by Matthew Wong</h6>
+			</div>
 		</div>
-		
-		<div class="w3-container">
-			<p>Created by Matthew Wong</p>
-		</div>
+
+
 		<script src="popup.js"></script>
-		
+		<script src="js/bootstrap.bundle.min.js"></script>
 	</body>
 </html>
