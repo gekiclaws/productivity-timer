@@ -28,10 +28,8 @@ const COLOR_CODES = {
   }
 };
 
-const TIME_LIMIT = 10;
-let timePassed = 0;
-let timeLeft = TIME_LIMIT;
-let timerInterval = null;
+const timerLength = 0.2*60;
+let countdown = null;
 let remainingPathColor = COLOR_CODES.info.color;
 
 document.getElementById("app").innerHTML = `
@@ -53,31 +51,10 @@ document.getElementById("app").innerHTML = `
     </g>
   </svg>
   <span id="base-timer-label" class="base-timer__label">${formatTime(
-    timeLeft
+    timerLength
   )}</span>
 </div>
 `;
-
-function onTimesUp() {
-  clearInterval(timerInterval);
-}
-
-function startTimer() {
-  timerInterval = setInterval(() => {
-    timePassed = timePassed += 1;
-    timeLeft = TIME_LIMIT - timePassed;
-    document.getElementById("base-timer-label").innerHTML = formatTime(
-      timeLeft
-    );
-    setCircleDasharray();
-    setRemainingPathColor(timeLeft);
-
-    if (timeLeft === 0) {
-      onTimesUp();
-      alert("the timer has ended");
-    }
-  }, 1000);
-}
 
 function formatTime(time) {
   const minutes = Math.floor(time / 60);
@@ -90,7 +67,7 @@ function formatTime(time) {
   return `${minutes}:${seconds}`;
 }
 
-function setRemainingPathColor(timeLeft) {
+function setRemainingPathColor(timeLeft, reset) {
   const { alert, warning, info } = COLOR_CODES;
   if (timeLeft <= alert.threshold) {
     document
@@ -107,26 +84,76 @@ function setRemainingPathColor(timeLeft) {
       .getElementById("base-timer-path-remaining")
       .classList.add(warning.color);
   }
+  if (reset){
+    document
+      .getElementById("base-timer-path-remaining")
+      .classList.remove(alert.color);
+    document
+      .getElementById("base-timer-path-remaining")
+      .classList.remove(warning.color);
+    document
+      .getElementById("base-timer-path-remaining")
+      .classList.add(info.color);
+  }
+
 }
 
-function calculateTimeFraction() {
-  const rawTimeFraction = timeLeft / TIME_LIMIT;
-  return rawTimeFraction - (1 / TIME_LIMIT) * (1 - rawTimeFraction);
+function calculateTimeFraction(timeLeft) {
+  const rawTimeFraction = timeLeft / timerLength;
+  return rawTimeFraction - (1 / timerLength) * (1 - rawTimeFraction);
 }
 
-function setCircleDasharray() {
+function setCircleDasharray(timeLeft) {
   const circleDasharray = `${(
-    calculateTimeFraction() * FULL_DASH_ARRAY
+    calculateTimeFraction(timeLeft) * FULL_DASH_ARRAY
   ).toFixed(0)} 283`;
   document
     .getElementById("base-timer-path-remaining")
     .setAttribute("stroke-dasharray", circleDasharray);
 }
 
-// startTimer()
+// 
 
-document.querySelector('#start').addEventListener("click", function() {
-	startTimer();
+function timer(startTime) {
+  clearInterval(countdown);
+
+  let timeLeft = startTime;
+  let timePassed = timerLength - timeLeft
+
+  countdown = setInterval(() => {
+    timePassed += 1;
+    timeLeft = timerLength - timePassed;
+
+    document.getElementById("base-timer-label").innerHTML = formatTime(timeLeft);
+
+    setCircleDasharray(timeLeft);
+    setRemainingPathColor(timeLeft, false);
+
+    if (timeLeft === 0) {
+      clearInterval(countdown);
+    }
+  }, 1000);
+}
+
+chrome.runtime.sendMessage({ cmd: 'GET_TIME' }, response => { // when extension is opened
+  if (response.endTime > 0) { // check whether timer is active
+    timerTime = Math.round((response.endTime - Date.now())/1000) // if true, display active timer
+    document.getElementById("base-timer-label").innerHTML = formatTime(timerTime);
+    timer(timerTime)
+  }
 });
 
+document.querySelector('#start').addEventListener("click", function() { // when start button is clicked, start timer
+	// add code to update timerLength / restLength based on options
+	chrome.runtime.sendMessage({ cmd: 'START_TIMER', timerLength: timerLength });
+  	timer(timerLength);
+});
+
+document.querySelector('#reset').addEventListener("click", function() { // when reset button is clicked, reset timer
+	chrome.runtime.sendMessage({ cmd: 'RESET_TIMER'});
+	clearInterval(countdown);
+	setCircleDasharray(timerLength);
+    setRemainingPathColor(timerLength, true);
+    document.getElementById("base-timer-label").innerHTML = formatTime(timerLength);
+});
 

@@ -19,4 +19,21 @@ chrome.runtime.onInstalled.addListener(function() {
 	});
 });
 
+let endAlert;
+let endTime;
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.cmd === 'START_TIMER') {
+    endTime = Date.now()+request.timerLength*1000;
+    endAlert = setTimeout(() => {
+       alert("the timer has ended");
+    }, request.timerLength*1000);
+  } else if (request.cmd === 'GET_TIME') {
+    sendResponse({ endTime: endTime});
+  } else if (request.cmd === 'RESET_TIMER') {
+    endTime = 0;
+    clearTimeout(endAlert);
+  }
+});
+
 
