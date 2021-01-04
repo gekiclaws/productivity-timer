@@ -9,35 +9,35 @@ document.querySelector('#options').addEventListener("click", function() {
 });
 
 // Options
-let workPeriod = 0;
-let restPeriod = 0;
+let workPeriod;
+let restPeriod;
+let blocking = true;
 let musicOn = true;
-let blockSites = true;
-let siteList = [];
+
+// Retrieve options from chrome.storage
+chrome.storage.sync.get(['workPeriod','restPeriod','musicOn', 'blocking'], function(items) {
+  workPeriod = items.workPeriod*60;
+  restPeriod = items.restPeriod*60;
+  blocking = items.blocking;
+  musicOn = items.musicOn;
+  document.getElementById("base-timer-label").innerHTML = `${timerTypeLabel} <br> ${formatTime(workPeriod)}`;
+});
 
 // Timer script - credit Mateusz Rybczonek 
 
 const FULL_DASH_ARRAY = 283;
-const WARNING_THRESHOLD = 30;
-const ALERT_THRESHOLD = 10;
-
 const COLOR_CODES = {
-  info: {
-    color: "green"
+  work: {
+    color: "blue"
   },
-  warning: {
-    color: "orange",
-    threshold: WARNING_THRESHOLD
-  },
-  alert: {
-    color: "red",
-    threshold: ALERT_THRESHOLD
+  rest: {
+    color: "green",
   }
 };
 
-let timerLength = 0;
 let countdown = null;
-let remainingPathColor = COLOR_CODES.info.color;
+let timerType = true;
+let timerTypeLabel = "work";
 
 document.getElementById("app").innerHTML = `
 <div class="base-timer">
@@ -47,7 +47,7 @@ document.getElementById("app").innerHTML = `
       <path
         id="base-timer-path-remaining"
         stroke-dasharray="283"
-        class="base-timer__path-remaining ${remainingPathColor}"
+        class="base-timer__path-remaining ${COLOR_CODES.work.color}"
         d="
           M 50, 50
           m -45, 0
@@ -61,13 +61,8 @@ document.getElementById("app").innerHTML = `
 </div>
 `;
 
-// Retrieve options from chrome.storage
-chrome.storage.sync.get(['workPeriod','restPeriod','musicOn','blockSites'], function(items) {
-    timerLength = items.workPeriod*60;
-    document.getElementById("base-timer-label").innerHTML = formatTime(timerLength);
-  });
-
-function formatTime(time) {
+// Format given time (in seconds) into MM:SS display format
+function formatTime(time) { 
   const minutes = Math.floor(time / 60);
   let seconds = time % 60;
 
@@ -78,93 +73,99 @@ function formatTime(time) {
   return `${minutes}:${seconds}`;
 }
 
-function setRemainingPathColor(timeLeft, reset) {
-  const { alert, warning, info } = COLOR_CODES;
-  if (timeLeft <= alert.threshold) {
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.remove(warning.color);
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.add(alert.color);
-  } else if (timeLeft <= warning.threshold) {
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.remove(info.color);
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.add(warning.color);
+// Animate timer UI
+function setRemainingPathColor() { // type is timer type: true for work timer/reset, false for rest timer
+  const { work, rest } = COLOR_CODES;
+  if (timerType){ 
+    document.getElementById("base-timer-path-remaining").classList = `base-timer__path-remaining ${work.color}`
+  } else {
+    document.getElementById("base-timer-path-remaining").classList = `base-timer__path-remaining ${rest.color}`
   }
-  if (reset){
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.remove(alert.color);
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.remove(warning.color);
-    document
-      .getElementById("base-timer-path-remaining")
-      .classList.add(info.color);
-  }
-
 }
 
-function calculateTimeFraction(timeLeft) {
+function calculateTimeFraction(timeLeft, timerLength) {
   const rawTimeFraction = timeLeft / timerLength;
   return rawTimeFraction - (1 / timerLength) * (1 - rawTimeFraction);
 }
 
-function setCircleDasharray(timeLeft) {
+function setCircleDasharray(timeLeft, timerLength) {
   const circleDasharray = `${(
-    calculateTimeFraction(timeLeft) * FULL_DASH_ARRAY
+    calculateTimeFraction(timeLeft, timerLength) * FULL_DASH_ARRAY
   ).toFixed(0)} 283`;
   document
     .getElementById("base-timer-path-remaining")
     .setAttribute("stroke-dasharray", circleDasharray);
 }
 
-function timer(startTime) {
+// Timer logic
+function timer(timeLeft, timerLength, restTime) {
   clearInterval(countdown);
 
-  let timeLeft = startTime;
-  let timePassed = timerLength - timeLeft
-
-  countdown = setInterval(() => {
+  setRemainingPathColor();
+  
+  let timePassed = timerLength - timeLeft;
+  countdown = setInterval(() => { // update timer every second
     timePassed += 1;
     timeLeft = timerLength - timePassed;
 
-    document.getElementById("base-timer-label").innerHTML = formatTime(timeLeft);
+    document.getElementById("base-timer-label").innerHTML = `${timerTypeLabel} <br> ${formatTime(timeLeft)}`
+    setCircleDasharray(timeLeft, timerLength);
 
-    setCircleDasharray(timeLeft);
-    setRemainingPathColor(timeLeft, false);
-
-    if (timeLeft === 0) {
-      clearInterval(countdown);
-      chrome.runtime.sendMessage({ cmd: 'RESET_TIMER'});
+    if (timeLeft === 0) { // timer ended
+      if (timerType){
+        timerType = false;
+        timerTypeLabel = "rest";
+        timer(restTime, restTime, restTime)
+      } else {
+        resetTimer()
+      }
+      
     }
-  }, 1000);
+  }, 1000); // 1000ms = 1s
+}
+
+function runTimer(timeLeftTotal, workTime, restTime){ // initialize work-rest period
+  if (timeLeftTotal >= restTime){ // timer in work phase
+    timerTypeLabel = "work";
+    document.getElementById("base-timer-label").innerHTML = `${timerTypeLabel} <br> ${formatTime(timeLeftTotal-restTime)}`;
+    timer(timeLeftTotal-restTime, workTime, restTime);
+  } else {
+    timerType = false;
+    timerTypeLabel = "rest";
+    document.getElementById("base-timer-label").innerHTML = `${timerTypeLabel} <br> ${formatTime(timeLeftTotal)}`;
+    timer(timeLeftTotal, restTime, restTime);
+  }
+}
+
+function resetTimer(){ // reset UI
+  clearInterval(countdown);
+  timerType = true;
+  timerTypeLabel = "work";
+  setCircleDasharray(workPeriod, workPeriod);
+  setRemainingPathColor();
+  document.getElementById("base-timer-label").innerHTML = `${timerTypeLabel} <br> ${formatTime(workPeriod)}`;
 }
 
 chrome.runtime.sendMessage({ cmd: 'GET_TIME' }, response => { // when extension is opened
-  if (response.endTime > 0) { // check whether timer is active
-    timerTime = Math.round((response.endTime - Date.now())/1000) // if true, display active timer
-    document.getElementById("base-timer-label").innerHTML = formatTime(timerTime);
-    timer(timerTime)
+  if (response.restEnd > Date.now()) { // check whether timer is active
+    let timerTime = Math.round((response.restEnd - Date.now())/1000)
+    console.log(timerTime)
+    runTimer(timerTime, response.workLength, response.restLength);
   }
+  document.querySelector('#volume-control').value = response.volume*100;
 });
 
 document.querySelector('#start').addEventListener("click", function() { // when start button is clicked, start timer
-	// add code to update timerLength / restLength based on options
-	chrome.runtime.sendMessage({ cmd: 'START_TIMER', timerLength: timerLength });
-	setRemainingPathColor(timerLength, true);
-  	timer(timerLength);
+	chrome.runtime.sendMessage({ cmd: 'RESET_TIMER'});
+  chrome.runtime.sendMessage({ cmd: 'START_TIMER', workLength: workPeriod, restLength: restPeriod, musicOn: musicOn, blocking: blocking});
+  runTimer(workPeriod+restPeriod, workPeriod, restPeriod);
 });
 
 document.querySelector('#reset').addEventListener("click", function() { // when reset button is clicked, reset timer
 	chrome.runtime.sendMessage({ cmd: 'RESET_TIMER'});
-	clearInterval(countdown);
-	setCircleDasharray(timerLength);
-    setRemainingPathColor(timerLength, true);
-    document.getElementById("base-timer-label").innerHTML = formatTime(timerLength);
+  resetTimer();
 });
 
+document.querySelector('#volume-control').addEventListener("change", function(e) {
+  chrome.runtime.sendMessage({ cmd: 'CHANGE_VOLUME', volume: e.currentTarget.value/100});
+})

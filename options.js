@@ -5,7 +5,8 @@ function save_options() {
     workPeriod: document.getElementById('work').value,
     restPeriod: document.getElementById('rest').value,
     musicOn: document.getElementById('music').checked,
-    blockSites: document.getElementById('sites').checked
+    blocking: document.getElementById('sites').checked, // enabled or not
+    blacklist: document.getElementById("textarea").value.split("\n").map(s => s.trim()).filter(Boolean), // list of blocked sites
   }, function() {
     // Update status to let user know options were saved.
     var status = document.getElementById('status');
@@ -24,15 +25,16 @@ function restore_options() {
     workPeriod: 25,
     restPeriod: 5,
     musicOn: true,
-    blockSites: true
+    blocking: true,
+    blacklist: []
   }, function(items) {
     document.getElementById('work').value = items.workPeriod;
     document.getElementById('rest').value = items.restPeriod;
     document.getElementById('music').checked = items.musicOn;
-    document.getElementById('sites').checked = items.blockSites;
+    document.getElementById('sites').checked = items.blocking;
+    document.getElementById('textarea').value = items.blacklist.join("\n");
   });
 }
 
 document.addEventListener('DOMContentLoaded', restore_options);
-document.getElementById('save').addEventListener('click',
-    save_options);
+document.getElementById('save').addEventListener('click', save_options);

@@ -2,10 +2,10 @@
   "name": "Worksmart - a productivity timer",
   "version": "0.0.0.1",
   "description": "Organize your long work sessions into work-rest periods using this productivity timer!",
-  "permissions": ["activeTab", "declarativeContent", "storage", "tabs"],
+  "permissions": ["declarativeContent", "storage", "alarms", "tabs"],
   "background": {
     "scripts": ["background.js"],
-    "persistent": false
+    "persistent": true
   },
   "page_action": {
     "default_popup": "popup.html",
