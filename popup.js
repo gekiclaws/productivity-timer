@@ -28,7 +28,7 @@ const COLOR_CODES = {
   }
 };
 
-const timerLength = 0.2*60;
+const timerLength = 10*60;
 let countdown = null;
 let remainingPathColor = COLOR_CODES.info.color;
 
@@ -112,8 +112,6 @@ function setCircleDasharray(timeLeft) {
     .setAttribute("stroke-dasharray", circleDasharray);
 }
 
-// 
-
 function timer(startTime) {
   clearInterval(countdown);
 
@@ -131,6 +129,7 @@ function timer(startTime) {
 
     if (timeLeft === 0) {
       clearInterval(countdown);
+      chrome.runtime.sendMessage({ cmd: 'RESET_TIMER'});
     }
   }, 1000);
 }
@@ -146,6 +145,7 @@ chrome.runtime.sendMessage({ cmd: 'GET_TIME' }, response => { // when extension 
 document.querySelector('#start').addEventListener("click", function() { // when start button is clicked, start timer
 	// add code to update timerLength / restLength based on options
 	chrome.runtime.sendMessage({ cmd: 'START_TIMER', timerLength: timerLength });
+	setRemainingPathColor(timerLength, true);
   	timer(timerLength);
 });
 
