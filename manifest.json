@@ -1,5 +1,5 @@
 {
-  "name": "Better - a productivity timer",
+  "name": "Worksmart - a productivity timer",
   "version": "0.0.0.1",
   "description": "Organize your long work sessions into work-rest periods using this productivity timer!",
   "permissions": ["activeTab", "declarativeContent", "storage", "tabs"],

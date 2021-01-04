@@ -8,6 +8,13 @@ document.querySelector('#options').addEventListener("click", function() {
   }
 });
 
+// Options
+let workPeriod = 0;
+let restPeriod = 0;
+let musicOn = true;
+let blockSites = true;
+let siteList = [];
+
 // Timer script - credit Mateusz Rybczonek 
 
 const FULL_DASH_ARRAY = 283;
@@ -28,7 +35,7 @@ const COLOR_CODES = {
   }
 };
 
-const timerLength = 10*60;
+let timerLength = 0;
 let countdown = null;
 let remainingPathColor = COLOR_CODES.info.color;
 
@@ -50,11 +57,15 @@ document.getElementById("app").innerHTML = `
       ></path>
     </g>
   </svg>
-  <span id="base-timer-label" class="base-timer__label">${formatTime(
-    timerLength
-  )}</span>
+  <span id="base-timer-label" class="base-timer__label"></span>
 </div>
 `;
+
+// Retrieve options from chrome.storage
+chrome.storage.sync.get(['workPeriod','restPeriod','musicOn','blockSites'], function(items) {
+    timerLength = items.workPeriod*60;
+    document.getElementById("base-timer-label").innerHTML = formatTime(timerLength);
+  });
 
 function formatTime(time) {
   const minutes = Math.floor(time / 60);
