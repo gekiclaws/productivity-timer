@@ -25,7 +25,7 @@ let restLength;
 let restEnd;
 
 var music = new Audio(chrome.runtime.getURL("music/music.mp3"));
-music.volume = 1;
+music.volume = 0.8;
 music.loop = true;
 var noti1 = new Audio(chrome.runtime.getURL("music/noti1.mp3"));
 var noti2 = new Audio(chrome.runtime.getURL("music/noti2.mp3"));

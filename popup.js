@@ -9,17 +9,19 @@ document.querySelector('#options').addEventListener("click", function() {
 });
 
 // Options
-let workPeriod;
-let restPeriod;
+let workPeriod = 25*60;
+let restPeriod = 5*60;
 let blocking = true;
 let musicOn = true;
 
 // Retrieve options from chrome.storage
 chrome.storage.sync.get(['workPeriod','restPeriod','musicOn', 'blocking'], function(items) {
-  workPeriod = items.workPeriod*60;
-  restPeriod = items.restPeriod*60;
-  blocking = items.blocking;
-  musicOn = items.musicOn;
+  if (items.workPeriod){
+    workPeriod = items.workPeriod*60;
+    restPeriod = items.restPeriod*60;
+    blocking = items.blocking;
+    musicOn = items.musicOn;
+  }
   document.getElementById("base-timer-label").innerHTML = `${timerTypeLabel} <br> ${formatTime(workPeriod)}`;
 });
 
